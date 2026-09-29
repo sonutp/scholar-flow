@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OmniStudy (ScholarFlow) - Unified Scholar & Professional Workspace</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Top Navbar -->
+    <header class="top-navbar">
+      <div class="nav-brand">
+        <div class="brand-icon">🎓</div>
+        <div>
+          <div class="brand-title">✦ OmniStudy</div>
+          <div class="brand-subtitle">notion × obsidian workspace</div>
+        </div>
+      </div>
+
+      <div class="nav-actions">
+        <!-- Live Auto-Save Status Indicator -->
+        <div class="status-pill" id="global-save-pill" title="Every change is instantly preserved in local storage and IndexedDB">
+          <span class="status-dot"></span>
+          <span id="save-status-text">Auto-saved</span>
+        </div>
+
+        <!-- Study Streak -->
+        <div class="status-pill badge-streak" title="Daily study streak">
+          🔥 5-Day Streak
+        </div>
+
+        <!-- Followed Creators Feed Toggle -->
+        <button class="btn-icon" id="creator-drawer-toggle" title="Followed Creators (YouTube & Instagram)">
+          📺
+        </button>
+
+        <!-- Theme Toggle -->
+        <button class="btn-icon" id="theme-toggle-btn" title="Toggle Dark / Light Theme">
+          ☀️
+        </button>
+      </div>
+    </header>
+
+    <!-- App Body -->
+    <div class="app-body">
+      <!-- Sidebar Navigation -->
+      <aside class="sidebar">
+        <nav class="nav-menu">
+          <div class="sidebar-section-title">Overview</div>
+          <button class="nav-item active" data-view="view-dashboard">
+            <span class="nav-item-icon">📊</span>
+            <span>Dashboard</span>
+          </button>
+
+          <div class="sidebar-section-title">Workspace</div>
+          <button class="nav-item" data-view="view-notes">
+            <span class="nav-item-icon">📝</span>
+            <span>Notes & Docs</span>
+          </button>
+          <button class="nav-item" data-view="view-voice">
+            <span class="nav-item-icon">🎙️</span>
+            <span>Voice Studio</span>
+          </button>
+
+          <div class="sidebar-section-title">Document & Tools</div>
+          <button class="nav-item" data-view="view-pdf">
+            <span class="nav-item-icon">📑</span>
+            <span>PDF Studio</span>
+          </button>
+          <button class="nav-item" data-view="view-passport">
+            <span class="nav-item-icon">🖼️</span>
+            <span>Photo Resizer</span>
+          </button>
+          <button class="nav-item" data-view="view-calendar">
+            <span class="nav-item-icon">📅</span>
+            <span>Calendar & Alerts</span>
+          </button>
+
+          <div class="sidebar-section-title">Focus & Planning</div>
+          <button class="nav-item" data-view="view-learning">
+            <span class="nav-item-icon">⏱️</span>
+            <span>Timer</span>
+          </button>
+          <button class="nav-item" data-view="view-partners">
+            <span class="nav-item-icon">👥</span>
+            <span>Study Partners</span>
+          </button>
+        </nav>
+
+        <div class="sidebar-footer">
+          <!-- Small Settings Navigation Tab -->
+          <button class="nav-item settings-nav-btn" data-view="view-settings" id="sidebar-settings-tab" title="Settings & Visual Preferences">
+            <span class="nav-item-icon">⚙️</span>
+            <span>Settings</span>
+          </button>
+
+          <!-- Scholar Account Card (Clickable to open settings/profile) -->
+          <div class="mini-profile" id="sidebar-profile-card" data-view="view-settings" style="cursor: pointer;" title="Customize Scholar Profile & Visuals">
+            <div class="avatar-badge" id="sidebar-avatar-badge">ST</div>
+            <div class="profile-info">
+              <div class="profile-name" id="sidebar-profile-name">Scholar Account</div>
+              <div class="profile-role" id="sidebar-profile-role">Active • Local Sync</div>
+            </div>
+            <span class="profile-gear-icon">⚙️</span>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main Workspace Views -->
+      <main class="workspace-content">
+        
+        <!-- 1. DASHBOARD VIEW -->
+        <section id="view-dashboard" class="view-panel active">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">Welcome back, Scholar</h1>
+              <p class="page-desc">Your persistent study command center. Everything you were working on is saved.</p>
+            </div>
+          </div>
+
+          <div class="grid-3">
+            <div class="card stat-card">
+              <div class="stat-icon" style="background: rgba(79, 70, 229, 0.15); color: #6366f1;">📝</div>
+              <div>
+                <div class="stat-val">12</div>
+                <div class="stat-label">Compiled Notes</div>
+              </div>
+            </div>
+            <div class="card stat-card">
+              <div class="stat-icon" style="background: rgba(6, 182, 212, 0.15); color: #06b6d4;">🎙️</div>
+              <div>
+                <div class="stat-val">4</div>
+                <div class="stat-label">Voice Memos</div>
+              </div>
+            </div>
+            <div class="card stat-card">
+              <div class="stat-icon" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b;">🔔</div>
+              <div>
+                <div class="stat-val">2</div>
+                <div class="stat-label">Upcoming Deadlines</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="quick-resume-banner">
+            <div>
+              <div style="font-weight: 700; font-size: 1.1rem; margin-bottom: 4px;">⚡ Sudden Close Protection Active</div>
+              <div style="font-size: 0.85rem; color: var(--text-secondary); max-width: 600px;">
+                Close your window anytime without fear. Your draft notes, recorded voice memos, photo edits, and active tabs are stored in real-time.
+              </div>
+            </div>
+            <button class="btn-primary" id="quick-resume-btn">Resume Workspace ➔</button>
+          </div>
+
+          <div style="margin-top: 24px;">
+            <div class="card">
+              <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 14px;">📅 Today's Focus & Deadlines</h3>
+              <div style="display: flex; flex-direction: column; gap: 10px;">
+                <div style="padding: 12px; border-radius: var(--radius-md); background: var(--bg-input); border-left: 3px solid #ef4444;">
+                  <div style="font-weight: 600; font-size: 0.9rem;">Review LeetCode Dynamic Programming</div>
+                  <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 2px;">Today at 18:30 • High Priority</div>
+                </div>
+                <div style="padding: 12px; border-radius: var(--radius-md); background: var(--bg-input); border-left: 3px solid #06b6d4;">
+                  <div style="font-weight: 600; font-size: 0.9rem;">25m Study & Focus Block</div>
+                  <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 2px;">Scheduled Deep Work Session</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. NOTES & DOCS VIEW -->
+        <section id="view-notes" class="view-panel">
+          <!-- View 1: Subject Square Tiles Grid -->
+          <div id="notes-subjects-container">
+            <div class="page-header">
+              <div>
+                <h1 class="page-title">Notes & Study Documentation</h1>
+                <p class="page-desc">Select a subject tile to open its notes, or create a new subject as you type.</p>
+              </div>
+              <button class="btn-primary" id="open-new-subject-btn">+ Add Subject Tile</button>
+            </div>
+
+            <!-- Subject search & quick creation bar -->
+            <div class="subjects-top-bar">
+              <div class="subjects-search-wrapper">
+                <input type="text" class="input-field" id="subject-search-input" placeholder="Type to search or create a subject (e.g. Physics, Maths, Biology)..." autocomplete="off">
+              </div>
+              <span class="status-pill" id="subject-count-badge">6 Subjects</span>
+            </div>
+
+            <!-- Square Tiles Grid -->
+            <div class="subjects-grid" id="subjects-tiles-grid"></div>
+          </div>
+
+          <!-- View 2: Inside a Subject (Notes List & Markdown Documentation) -->
+          <div id="notes-workspace-container" style="display: none;">
+            <div class="subject-breadcrumb-bar">
+              <div class="subject-breadcrumb-title">
+                <button class="breadcrumb-back-btn" id="notes-back-to-subjects-btn">← All Subjects</button>
+                <span style="color: var(--text-muted);">/</span>
+                <span id="active-subject-header-title" style="font-weight: 700; color: var(--text-primary);">Subject</span>
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <button class="btn-secondary" id="note-share-btn">🔗 Share</button>
+                <button class="btn-secondary" id="note-export-pdf-btn" title="Download current note as PDF">📥 Download PDF</button>
+                <button class="btn-primary" id="notes-new-btn">+ New Note</button>
+              </div>
+            </div>
+
+            <div class="notes-container">
+              <!-- Sidebar: notes list inside active subject -->
+              <div class="card notes-sidebar">
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                  <input type="text" class="input-field" id="notes-search-input" placeholder="Search notes in this subject...">
+                </div>
+                <div class="notes-list" id="notes-list-items"></div>
+              </div>
+
+              <!-- Main: Rich Markdown Editor -->
+              <div class="card notes-editor-pane">
+                <div class="note-editor-header">
+                  <input type="text" class="note-editor-title" id="note-edit-title" placeholder="Note Title...">
+                  <div style="display: flex; gap: 8px; align-items: center;">
+                    <div class="note-mode-toggle">
+                      <button type="button" class="note-mode-btn active" id="note-mode-edit-btn" title="Markdown Source Editor">✏️ Edit</button>
+                      <button type="button" class="note-mode-btn" id="note-mode-preview-btn" title="Reading & Audio Preview">👁️ Preview</button>
+                    </div>
+                    <button class="btn-danger" id="note-delete-btn" title="Delete Note">✕</button>
+                  </div>
+                </div>
+
+                <div style="display: flex; gap: 12px;">
+                  <input type="text" class="input-field" id="note-edit-category" placeholder="Subject / Category" style="max-width: 200px;">
+                  <input type="text" class="input-field" id="note-edit-tags" placeholder="Tags (comma separated, e.g. formulas, exam-prep)">
+                </div>
+
+                <!-- Note Editor Actions, Formatting & PDF Page Size Toolbar -->
+                <div class="note-editor-toolbar">
+                  <!-- Left: Voice Note, Font Picker, Font Size, Rich Formatting -->
+                  <div class="note-toolbar-left">
+                    <button type="button" class="btn-secondary btn-sm" id="note-toolbar-voice-btn" title="Add Voice Note at cursor">🎙️ Voice Note</button>
+
+                    <span class="toolbar-sep"></span>
+
+                    <!-- Font Family Selector -->
+                    <div class="toolbar-dropdown-group" title="Choose editor font">
+                      <label for="note-font-family-select" class="toolbar-label">Font:</label>
+                      <select id="note-font-family-select" class="input-field toolbar-select">
+                        <option value="sans" selected>Sans-Serif</option>
+                        <option value="serif">Academic Serif</option>
+                        <option value="mono">Monospace</option>
+                        <option value="handwriting">Handwriting</option>
+                        <option value="dyslexic">Dyslexic Friendly</option>
+                      </select>
+                    </div>
+
+                    <!-- Font Size Selector -->
+                    <div class="toolbar-dropdown-group" title="Choose font size">
+                      <label for="note-font-size-select" class="toolbar-label">Size:</label>
+                      <select id="note-font-size-select" class="input-field toolbar-select" style="min-width: 68px;">
+                        <option value="13px">13px</option>
+                        <option value="15px" selected>15px</option>
+                        <option value="17px">17px</option>
+                        <option value="19px">19px</option>
+                        <option value="22px">22px</option>
+                      </select>
+                    </div>
+
+                    <span class="toolbar-sep"></span>
+
+                    <!-- Formatting Tools: Bold, Italics, Underline, Highlight, Strikethrough, Heading -->
+                    <div class="toolbar-format-group">
+                      <button type="button" class="format-btn" id="format-bold-btn" title="Bold (**bold**) [Ctrl+B]"><b>B</b></button>
+                      <button type="button" class="format-btn" id="format-italic-btn" title="Italic (*italic*) [Ctrl+I]"><i>I</i></button>
+                      <button type="button" class="format-btn" id="format-underline-btn" title="Underline (<u>underline</u>) [Ctrl+U]"><span style="text-decoration: underline; font-weight: 600;">U</span></button>
+                      <button type="button" class="format-btn" id="format-highlight-btn" title="Highlight (==highlight==)"><mark class="format-h-icon">H</mark></button>
+                      <button type="button" class="format-btn" id="format-strike-btn" title="Strikethrough (~~strike~~)"><span style="text-decoration: line-through;">S</span></button>
+                      <button type="button" class="format-btn" id="format-heading-btn" title="Heading 3 (### Heading)"><b>H</b></button>
+                    </div>
+                  </div>
+
+                  <!-- Right: Page Size & PDF Download -->
+                  <div class="note-toolbar-right">
+                    <label for="note-pdf-page-size" class="toolbar-label">Page Size:</label>
+                    <select id="note-pdf-page-size" class="input-field toolbar-select" title="Choose page size for PDF download">
+                      <option value="A4" selected>📄 A4 (Standard)</option>
+                      <option value="Letter">📄 US Letter</option>
+                      <option value="Legal">📄 US Legal</option>
+                      <option value="A5">📄 A5 (Notebook)</option>
+                      <option value="A3">📄 A3 (Large Sheet)</option>
+                      <option value="Executive">📄 Executive</option>
+                    </select>
+                    <button type="button" class="btn-primary btn-sm" id="note-download-pdf-btn" title="Download this note separately as a PDF with what is written inside it">📥 Download PDF</button>
+                  </div>
+                </div>
+
+                <div class="note-editor-wrapper" style="position: relative; flex: 1; display: flex; flex-direction: column; min-height: 0;">
+                  <div class="note-editor-body" id="note-edit-content" contenteditable="true" spellcheck="true" role="textbox" aria-multiline="true" data-placeholder="Start typing your rich notes here... Format with Bold, Italics, Underline, or Highlight directly while typing (Ctrl+B, Ctrl+I, Ctrl+U). Right-click for options."></div>
+                  <div class="note-editor-body note-preview-body" id="note-preview-content" style="display: none; overflow-y: auto;"></div>
+
+                  <!-- In-Editor Sleek Audio Player HUD (Plays when 🎙️ mic logo is clicked inside notes area) -->
+                  <div id="note-inline-audio-hud" class="note-inline-audio-hud" style="display: none;">
+                    <div class="hud-left">
+                      <button type="button" class="hud-mic-btn" id="hud-mic-play-btn" title="Toggle Play / Pause">🎙️</button>
+                      <div class="hud-info">
+                        <div class="hud-title" id="hud-memo-title">Voice Note</div>
+                        <div class="hud-timer" id="hud-memo-timer">00:00 / 00:00</div>
+                      </div>
+                    </div>
+                    <div class="hud-progress-wrap" id="hud-progress-wrap" title="Click to seek">
+                      <div class="hud-progress-bar">
+                        <div class="hud-progress-fill" id="hud-progress-fill" style="width: 0%;"></div>
+                      </div>
+                    </div>
+                    <div class="hud-controls">
+                      <button type="button" class="hud-btn" id="hud-speed-btn" title="Playback Speed">1x</button>
+                      <button type="button" class="hud-btn" id="hud-close-btn" title="Stop Audio">✕</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3. VOICE STUDIO VIEW -->
+        <section id="view-voice" class="view-panel">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">Voice Studio & Audio Memos</h1>
+              <p class="page-desc">Record lectures, dictations, or study summaries. Play back with variable speed controls (1x, 1.5x, 2x).</p>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <!-- Voice Recording Box -->
+            <div class="voice-recorder-box">
+              <button class="record-btn-big" id="voice-record-toggle-btn" title="Click to Record Audio">🎙️</button>
+              <div style="font-size: 2rem; font-weight: 700; font-variant-numeric: tabular-nums;" id="voice-record-timer">00:00</div>
+              <p style="font-size: 0.85rem; color: var(--text-secondary);" id="voice-record-status">Click the microphone to start recording a voice note</p>
+              
+              <canvas id="voice-waveform-canvas" class="waveform-canvas" width="400" height="90"></canvas>
+
+              <!-- Post recording controls -->
+              <div id="voice-post-record-pane" style="display: none; width: 100%;">
+                <div class="audio-controls-row">
+                  <audio id="voice-audio-player" controls style="flex: 1; height: 36px;"></audio>
+                  <div style="display: flex; gap: 4px;">
+                    <button class="speed-badge voice-speed-badge" data-speed="0.75">0.75x</button>
+                    <button class="speed-badge voice-speed-badge active" data-speed="1">1x</button>
+                    <button class="speed-badge voice-speed-badge" data-speed="1.25">1.25x</button>
+                    <button class="speed-badge voice-speed-badge" data-speed="1.5">1.5x</button>
+                    <button class="speed-badge voice-speed-badge" data-speed="2">2x</button>
+                  </div>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 14px;">
+                  <input type="text" class="input-field" id="voice-memo-title" placeholder="Memo Title (e.g. Physics Formulas)...">
+                  <span id="voice-duration-display" style="display:none;">00:00</span>
+                  <button class="btn-primary" id="voice-save-btn">Save Memo</button>
+                  <button class="btn-secondary" id="voice-discard-btn">Discard</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Saved Voice Memos Library -->
+            <div class="card">
+              <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 14px;">🎙️ Saved Audio Memos Library</h3>
+              <div id="voice-memos-list"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 4. PDF STUDIO & COMPILER VIEW -->
+        <section id="view-pdf" class="view-panel">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">PDF Studio & Document Compiler</h1>
+              <p class="page-desc">Merge multiple PDF files, reorder pages, or compile notes directly into a unified PDF document.</p>
+            </div>
+            <div style="display: flex; gap: 10px;">
+              <button class="btn-secondary" id="pdf-clear-btn">Clear Queue</button>
+              <button class="btn-primary" id="pdf-compile-btn">🚀 Compile & Download PDF</button>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div>
+              <!-- Dropzone -->
+              <div class="dropzone" id="pdf-dropzone">
+                <div style="font-size: 2.5rem; margin-bottom: 10px;">📑</div>
+                <div style="font-weight: 700; font-size: 1.1rem;">Drag & Drop PDF Documents Here</div>
+                <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 6px;">or browse files from your computer</div>
+                <input type="file" id="pdf-file-input" multiple accept="application/pdf" style="display:none;">
+                <button class="btn-secondary" style="margin-top: 14px;" onclick="document.getElementById('pdf-file-input').click()">Browse PDFs</button>
+              </div>
+
+              <!-- Import from Notes -->
+              <div class="card" style="margin-top: 18px;">
+                <h4 style="font-size: 0.95rem; font-weight: 600; margin-bottom: 10px;">Import Saved Study Notes into PDF Bundle:</h4>
+                <div style="display: flex; gap: 10px;">
+                  <select class="select-field" id="pdf-note-import-select" style="flex: 1;"></select>
+                  <button class="btn-secondary" id="pdf-import-note-btn">+ Add to Bundle</button>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                  <h3 style="font-size: 1.1rem; font-weight: 700;">Compile Sequence & Arrangement</h3>
+                  <span id="pdf-summary-stats" style="font-size: 0.8rem; color: var(--text-secondary);">0 documents queued</span>
+                </div>
+
+                <div style="margin-bottom: 12px;">
+                  <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">Compiled Document Title:</label>
+                  <input type="text" class="input-field" id="pdf-bundle-title" value="Semester_Study_Guide_Compiled">
+                </div>
+
+                <div id="pdf-files-list" class="pdf-files-list"></div>
+
+                <div id="pdf-compile-status" style="margin-top: 14px; font-size: 0.85rem; font-weight: 600;"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 5. PASSPORT PHOTO RESIZER (PIXELS & KB) -->
+        <section id="view-passport" class="view-panel">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">Passport Photo Studio & KB Compressor</h1>
+              <p class="page-desc">Resize photo to exact pixel dimensions (W × H) and target file size in KB with biometric guidelines.</p>
+            </div>
+            <div style="display: flex; gap: 10px;">
+              <button class="btn-primary" id="passport-process-btn">⚙️ Process & Compress</button>
+              <button class="btn-secondary" id="passport-download-btn" disabled>💾 Download Photo</button>
+            </div>
+          </div>
+
+          <div class="passport-workspace">
+            <!-- Left: Interactive Canvas with Guidelines -->
+            <div class="card">
+              <div class="photo-preview-box" id="passport-dropzone">
+                <canvas id="passport-preview-canvas" style="max-width: 100%; max-height: 100%; object-fit: contain;"></canvas>
+              </div>
+
+              <div style="display: flex; justify-content: space-between; margin-top: 12px;">
+                <span id="passport-orig-stats" style="font-size: 0.8rem; color: var(--text-secondary);">No photo loaded</span>
+                <span id="passport-output-stats" style="font-size: 0.8rem; color: var(--accent); font-weight: 600;">Target Output: Ready</span>
+              </div>
+
+              <div id="passport-process-status" style="margin-top: 8px; font-size: 0.85rem; font-weight: 600;"></div>
+
+              <div style="margin-top: 14px; display: flex; justify-content: center; gap: 10px; align-items: center;">
+                <input type="file" id="passport-file-input" accept="image/*" style="display:none;">
+                <button class="btn-secondary" onclick="document.getElementById('passport-file-input').click()">📁 Choose Photo from Device</button>
+                <button type="button" class="btn-secondary" id="passport-delete-btn" style="color: var(--danger); border-color: rgba(239, 68, 68, 0.3);" title="Delete current photo">🗑️ Delete Image</button>
+              </div>
+            </div>
+
+            <!-- Right: Precision Controls -->
+            <div class="card" style="display: flex; flex-direction: column; gap: 16px;">
+              <div>
+                <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 6px;">Official Passport / Visa Preset:</label>
+                <select class="select-field" id="passport-preset-select">
+                  <option value="india">India Passport / Exam / SSC (413 × 531 px, 20-50 KB)</option>
+                  <option value="us">US Visa / Green Card (600 × 600 px, max 100 KB)</option>
+                  <option value="schengen">Schengen / EU Visa (413 × 531 px, 30-80 KB)</option>
+                  <option value="uk">UK Passport (413 × 531 px, max 40 KB)</option>
+                  <option value="custom">Custom Dimensions & Target KB</option>
+                </select>
+              </div>
+
+              <div class="spec-grid">
+                <div>
+                  <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">Target Width (Pixels):</label>
+                  <input type="number" class="input-field" id="passport-width-input" value="413">
+                </div>
+                <div>
+                  <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">Target Height (Pixels):</label>
+                  <input type="number" class="input-field" id="passport-height-input" value="531">
+                </div>
+              </div>
+
+              <div>
+                <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">
+                  Target File Size (KB): <span style="font-weight: 700; color: var(--accent);">Strict File Limit</span>
+                </label>
+                <input type="number" class="input-field" id="passport-kb-input" value="45" placeholder="e.g. 50 KB">
+                <span style="font-size: 0.72rem; color: var(--text-muted);">Uses iterative binary compression to fit within exact government portal upload thresholds.</span>
+              </div>
+
+              <div>
+                <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">Background Color Tone:</label>
+                <select class="select-field" id="passport-bg-select">
+                  <option value="white">Plain White (Official Standard)</option>
+                  <option value="off-white">Off-White / Light Gray</option>
+                  <option value="light-blue">Light Blue</option>
+                </select>
+              </div>
+
+              <div style="background: var(--bg-input); padding: 14px; border-radius: var(--radius-md); border: 1px solid var(--border);">
+                <div style="font-size: 0.85rem; font-weight: 600; margin-bottom: 10px;">Crop & Face Positioning:</div>
+                <div style="margin-bottom: 8px;">
+                  <label style="font-size: 0.75rem; color: var(--text-secondary);">Zoom Scale:</label>
+                  <input type="range" id="passport-zoom-slider" min="0.5" max="2.5" step="0.05" value="1" style="width: 100%;">
+                </div>
+                <div class="spec-grid">
+                  <div>
+                    <label style="font-size: 0.75rem; color: var(--text-secondary);">Center X Offset:</label>
+                    <input type="range" id="passport-offset-x" min="-50" max="50" step="1" value="0" style="width: 100%;">
+                  </div>
+                  <div>
+                    <label style="font-size: 0.75rem; color: var(--text-secondary);">Center Y Offset:</label>
+                    <input type="range" id="passport-offset-y" min="-50" max="50" step="1" value="0" style="width: 100%;">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 6. CALENDAR & REMINDERS VIEW -->
+        <section id="view-calendar" class="view-panel">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">Interactive Calendar & Audio Reminders</h1>
+              <p class="page-desc">Mark exam dates, assignments, and study blocks. Real-time audio chimes and notifications alert you when due.</p>
+            </div>
+          </div>
+
+          <div class="calendar-layout">
+            <!-- Monthly Grid -->
+            <div class="card">
+              <div class="calendar-header">
+                <h2 class="calendar-month-title" id="cal-month-title">September 2026</h2>
+                <div style="display: flex; gap: 8px;">
+                  <button class="btn-icon" id="cal-prev-month">◀</button>
+                  <button class="btn-secondary" id="cal-today-btn" style="padding: 4px 12px; font-size: 0.8rem;">Today</button>
+                  <button class="btn-icon" id="cal-next-month">▶</button>
+                </div>
+              </div>
+
+              <div class="calendar-grid-header">
+                <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+              </div>
+
+              <div class="calendar-days-grid" id="cal-days-grid"></div>
+            </div>
+
+            <!-- Reminders Management Pane -->
+            <div class="card" style="display: flex; flex-direction: column; gap: 16px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                <h3 style="font-size: 1.1rem; font-weight: 700;" id="reminders-view-title">Reminders & Deadlines</h3>
+                <div class="system-time-pill" id="system-time-pill" title="Current Real Computer System Clock">
+                  <span class="system-time-dot"></span>
+                  <span id="live-system-time-text">System Time: --:--:--</span>
+                </div>
+              </div>
+
+              <div class="reminders-list" id="reminders-list-container"></div>
+
+              <!-- Add reminder form -->
+              <form id="calendar-add-reminder-form" style="display: flex; flex-direction: column; gap: 10px; border-top: 1px solid var(--border); padding-top: 14px;">
+                <div style="font-weight: 600; font-size: 0.9rem;">+ Set New Reminder</div>
+                <input type="text" class="input-field" id="rem-title" placeholder="Reminder Title (e.g. Submit Lab Report)..." required>
+                
+                <div class="spec-grid">
+                  <input type="date" class="input-field" id="rem-date" required>
+                  <input type="time" class="input-field" id="rem-time" value="18:00" required>
+                </div>
+
+                <div class="spec-grid">
+                  <select class="select-field" id="rem-priority">
+                    <option value="high">High Priority (Red Alert)</option>
+                    <option value="medium" selected>Medium Priority</option>
+                    <option value="low">Low Priority</option>
+                  </select>
+                  <button type="submit" class="btn-primary">Set Reminder 🔔</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        <!-- 7. ADJUSTABLE TIMER VIEW -->
+        <section id="view-learning" class="view-panel">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">⏱️ Study & Focus Timer</h1>
+              <p class="page-desc">Easily adjustable countdown timer with audio alarm and persistent multi-tab tracking.</p>
+            </div>
+          </div>
+
+          <div style="max-width: 680px; margin: 10px auto 0;">
+            <div class="card timer-card">
+              <!-- Big Digital Clock -->
+              <div class="timer-digits-container">
+                <div class="timer-digits-display" id="timer-display-digits">25:00</div>
+                <div class="timer-status-badge" id="timer-status-badge">Ready to Start</div>
+              </div>
+
+              <!-- Direct Time Adjusters (Hours : Minutes : Seconds) -->
+              <div class="timer-inputs-row">
+                <div class="timer-input-group">
+                  <label for="timer-input-hours">Hours</label>
+                  <div class="timer-spin-control">
+                    <button type="button" class="btn-icon timer-spin-btn" id="spin-h-down" title="Decrease Hour">-</button>
+                    <input type="number" id="timer-input-hours" min="0" max="99" value="0" class="timer-spin-input">
+                    <button type="button" class="btn-icon timer-spin-btn" id="spin-h-up" title="Increase Hour">+</button>
+                  </div>
+                </div>
+                <span class="timer-colon">:</span>
+                <div class="timer-input-group">
+                  <label for="timer-input-mins">Minutes</label>
+                  <div class="timer-spin-control">
+                    <button type="button" class="btn-icon timer-spin-btn" id="spin-m-down" title="Decrease Minute">-</button>
+                    <input type="number" id="timer-input-mins" min="0" max="59" value="25" class="timer-spin-input">
+                    <button type="button" class="btn-icon timer-spin-btn" id="spin-m-up" title="Increase Minute">+</button>
+                  </div>
+                </div>
+                <span class="timer-colon">:</span>
+                <div class="timer-input-group">
+                  <label for="timer-input-secs">Seconds</label>
+                  <div class="timer-spin-control">
+                    <button type="button" class="btn-icon timer-spin-btn" id="spin-s-down" title="Decrease Second">-</button>
+                    <input type="number" id="timer-input-secs" min="0" max="59" value="0" class="timer-spin-input">
+                    <button type="button" class="btn-icon timer-spin-btn" id="spin-s-up" title="Increase Second">+</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Quick Time Preset Buttons -->
+              <div class="timer-presets-wrap">
+                <span style="font-size: 0.78rem; color: var(--text-secondary); font-weight: 600;">Presets:</span>
+                <button type="button" class="btn-secondary btn-sm timer-preset-btn" data-seconds="300">5m</button>
+                <button type="button" class="btn-secondary btn-sm timer-preset-btn" data-seconds="600">10m</button>
+                <button type="button" class="btn-secondary btn-sm timer-preset-btn" data-seconds="900">15m</button>
+                <button type="button" class="btn-secondary btn-sm timer-preset-btn" data-seconds="1200">20m</button>
+                <button type="button" class="btn-secondary btn-sm timer-preset-btn active" data-seconds="1500">25m</button>
+                <button type="button" class="btn-secondary btn-sm timer-preset-btn" data-seconds="1800">30m</button>
+                <button type="button" class="btn-secondary btn-sm timer-preset-btn" data-seconds="2700">45m</button>
+                <button type="button" class="btn-secondary btn-sm timer-preset-btn" data-seconds="3600">60m</button>
+              </div>
+
+              <!-- Quick Stepper Adjusters (+/- on the fly) -->
+              <div class="timer-steppers-wrap">
+                <span style="font-size: 0.78rem; color: var(--text-secondary); font-weight: 600;">Quick Adjust:</span>
+                <button type="button" class="btn-secondary btn-sm timer-step-btn" data-delta="-300">-5m</button>
+                <button type="button" class="btn-secondary btn-sm timer-step-btn" data-delta="-60">-1m</button>
+                <button type="button" class="btn-secondary btn-sm timer-step-btn" data-delta="60">+1m</button>
+                <button type="button" class="btn-secondary btn-sm timer-step-btn" data-delta="300">+5m</button>
+                <button type="button" class="btn-secondary btn-sm timer-step-btn" data-delta="600">+10m</button>
+              </div>
+
+              <!-- Main Action Controls -->
+              <div class="timer-main-actions">
+                <button type="button" class="btn-primary timer-big-btn" id="timer-toggle-btn">▶️ Start Timer</button>
+                <button type="button" class="btn-secondary timer-big-btn" id="timer-reset-btn">🔄 Reset</button>
+                <button type="button" class="btn-danger timer-big-btn" id="timer-stop-alarm-btn" style="display: none;">🔕 Stop Alarm</button>
+              </div>
+
+              <!-- Multi-tab Persistence Note -->
+              <div style="margin-top: 24px; padding: 12px 16px; background: var(--bg-input); border-radius: var(--radius-sm); font-size: 0.82rem; color: var(--text-secondary); display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <span>💡</span>
+                <span>The timer keeps ticking across all tabs. You will see the live countdown at the bottom right of your screen on any tab!</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 8. STUDY PARTNERS & GROUPS VIEW -->
+        <section id="view-partners" class="view-panel">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">Study Partners & Collaborative Groups</h1>
+              <p class="page-desc">Find like-minded study partners by subject and study style, send messages, and join sprint groups.</p>
+            </div>
+            <button class="btn-primary open-modal-btn" data-modal="create-group-modal">+ Create Study Group</button>
+          </div>
+
+          <!-- Partner Filter Bar -->
+          <div class="card" style="margin-bottom: 20px;">
+            <div class="grid-3">
+              <input type="text" class="input-field" id="partner-search-input" placeholder="Search partner by name or specialty...">
+              <select class="select-field" id="partner-subject-filter">
+                <option value="all">All Subjects</option>
+                <option value="Computer Science">Computer Science</option>
+                <option value="Medicine">Medicine & Biology</option>
+                <option value="Law">Law & Jurisprudence</option>
+                <option value="Data Science">Data Science & AI</option>
+                <option value="Finance">Finance & Business</option>
+              </select>
+              <select class="select-field" id="partner-style-filter">
+                <option value="all">All Study Styles</option>
+                <option value="Pomodoro">Pomodoro Sprints</option>
+                <option value="Flashcards">Flashcards & Active Recall</option>
+                <option value="Case Analysis">Case Analysis & Debate</option>
+                <option value="Project-Based">Project-Based Coding</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Partners Grid -->
+          <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 12px;">🌟 Matched Study Partners</h3>
+          <div class="grid-3" id="partners-grid" style="margin-bottom: 30px;"></div>
+
+          <!-- Study Groups -->
+          <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 12px;">🏛️ Active Collaborative Study Groups</h3>
+          <div class="grid-3" id="study-groups-grid"></div>
+        </section>
+
+        <!-- 9. SETTINGS & VISUAL CUSTOMIZATION VIEW -->
+        <section id="view-settings" class="view-panel">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">⚙️ Settings & Visual Customization</h1>
+              <p class="page-desc">Personalize themes, Obsidian accent colors, typography, canvas textures, and your Scholar Account profile.</p>
+            </div>
+            <button class="btn-secondary" id="setting-reset-defaults-btn">↺ Reset Visuals</button>
+          </div>
+
+          <div class="grid-2">
+            <!-- Left Column: Visual Customizations -->
+            <div style="display: flex; flex-direction: column; gap: 18px;">
+              <!-- Visual Theme Mode -->
+              <div class="card">
+                <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: 12px;">🎨 Workspace Theme Mode</h3>
+                <div class="theme-switch-row">
+                  <button class="theme-mode-btn" id="setting-theme-dark">
+                    <span>🌙</span>
+                    <span>Obsidian Dark (Graphite)</span>
+                  </button>
+                  <button class="theme-mode-btn" id="setting-theme-light">
+                    <span>☀️</span>
+                    <span>Notion Light (Warm Paper)</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Accent Color Palette -->
+              <div class="card">
+                <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: 6px;">✨ Obsidian Signature Accent Color</h3>
+                <p style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 12px;">Select an accent color for active tabs, buttons, highlights, and focus borders:</p>
+                <div class="color-swatches-grid" id="accent-color-swatches"></div>
+              </div>
+
+              <!-- Typography Engine & Sizing -->
+              <div class="card">
+                <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: 12px;">🔤 Typography & Canvas Textures</h3>
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                  <div>
+                    <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">Font Engine:</label>
+                    <select class="select-field" id="setting-font-family">
+                      <option value="sans">Humanist Sans (Notion Editorial - Inter / System)</option>
+                      <option value="mono">Code & Technical Monospace (Obsidian - SF / JetBrains)</option>
+                      <option value="serif">Academic Serif (Georgia / Classic Scholar)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">UI Scaling & Density:</label>
+                    <select class="select-field" id="setting-font-size">
+                      <option value="compact">Compact (High Information Density - 13px)</option>
+                      <option value="default" selected>Standard (Balanced Reading - 14px)</option>
+                      <option value="relaxed">Relaxed (Comfortable Reading - 15.5px)</option>
+                    </select>
+                  </div>
+                  <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--bg-input); border-radius: var(--radius-sm); border: 1px solid var(--border); margin-top: 4px;">
+                    <div>
+                      <div style="font-weight: 600; font-size: 0.85rem;">Obsidian Canvas Dot Grid</div>
+                      <div style="font-size: 0.75rem; color: var(--text-secondary);">Subtle background dot grid pattern</div>
+                    </div>
+                    <input type="checkbox" id="setting-canvas-grid" style="cursor: pointer; width: 18px; height: 18px;">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Column: Scholar Account Profile & Data Management -->
+            <div style="display: flex; flex-direction: column; gap: 18px;">
+              <!-- Scholar Profile Card -->
+              <div class="card">
+                <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: 12px;">👤 Scholar Account Profile</h3>
+                <form id="scholar-profile-form" style="display: flex; flex-direction: column; gap: 12px;">
+                  <div>
+                    <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">Display Name:</label>
+                    <input type="text" class="input-field" id="profile-name-input" value="Scholar Account" placeholder="e.g. Alex Mercer" required>
+                  </div>
+                  <div>
+                    <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">Academic Specialty / Field:</label>
+                    <input type="text" class="input-field" id="profile-role-input" value="Physics & Computer Science" placeholder="e.g. Pre-Med / Neuroscience">
+                  </div>
+                  <div>
+                    <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">Avatar Badge (2 Initials or Emoji):</label>
+                    <input type="text" class="input-field" id="profile-avatar-input" value="🎓" style="max-width: 120px;" maxlength="4">
+                  </div>
+                  <button type="submit" class="btn-primary" style="margin-top: 4px;">Save Scholar Profile</button>
+                </form>
+              </div>
+
+              <!-- Audio & Notifications -->
+              <div class="card">
+                <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: 12px;">🔔 Audio Chimes & Alert Experience</h3>
+                <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 12px;">Synthesized Web Audio chimes notify you when study timers reach zero or reminders are due.</p>
+                <div style="display: flex; gap: 10px;">
+                  <button class="btn-secondary" id="setting-test-chime-btn">🔔 Test Melodic Chime</button>
+                </div>
+              </div>
+
+              <!-- Backup & Data Management -->
+              <div class="card">
+                <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: 8px;">💾 Data Persistence & Backup</h3>
+                <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 14px;">Your workspace auto-saves in real-time. Export an offline JSON snapshot anytime or restore on a new machine.</p>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                  <button class="btn-secondary" id="setting-export-backup-btn">📥 Export JSON Backup</button>
+                  <label class="btn-secondary" style="cursor: pointer; margin: 0;">
+                    📤 Restore Backup
+                    <input type="file" id="setting-import-file" accept="application/json" style="display: none;">
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </main>
+
+      <!-- Slide-Out Right Drawer: Followed Creators (YouTube & Instagram) -->
+      <aside class="creator-drawer" id="creator-drawer">
+        <div class="drawer-header">
+          <div>
+            <div style="font-weight: 700; font-size: 1.1rem;">📺 Followed Creators</div>
+            <div style="font-size: 0.75rem; color: var(--text-secondary);">YouTube & Instagram Channels</div>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn-icon" id="creator-drawer-close" title="Close Drawer">✕</button>
+          </div>
+        </div>
+
+        <!-- Filter bar -->
+        <div style="display: flex; gap: 8px; padding: 12px 18px; border-bottom: 1px solid var(--border);">
+          <button class="btn-secondary creator-filter-btn active" data-platform="all" style="flex: 1; padding: 4px; font-size: 0.8rem;">All</button>
+          <button class="btn-secondary creator-filter-btn" data-platform="YouTube" style="flex: 1; padding: 4px; font-size: 0.8rem;">YouTube</button>
+          <button class="btn-secondary creator-filter-btn" data-platform="Instagram" style="flex: 1; padding: 4px; font-size: 0.8rem;">Instagram</button>
+        </div>
+
+        <div class="drawer-body" id="creators-feed-container"></div>
+
+        <div style="padding: 16px; border-top: 1px solid var(--border);">
+          <button class="btn-primary open-modal-btn" data-modal="add-creator-modal" style="width: 100%;">+ Follow New Creator</button>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <!-- Modal 1: Direct Chat with Study Partner -->
+  <div class="modal-overlay" id="chat-modal">
+    <div class="modal-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+        <div>
+          <div style="font-weight: 700; font-size: 1.1rem;" id="chat-partner-name">Study Partner</div>
+          <div style="font-size: 0.75rem; color: var(--text-secondary);" id="chat-partner-sub">Online</div>
+        </div>
+        <button class="btn-icon modal-close-btn" id="chat-modal-close">✕</button>
+      </div>
+
+      <div id="chat-messages-container" style="height: 280px; overflow-y: auto; padding: 10px; background: var(--bg-card); border-radius: var(--radius-md); border: 1px solid var(--border); margin-bottom: 12px;"></div>
+
+      <div style="display: flex; gap: 8px;">
+        <input type="text" class="input-field" id="chat-input-text" placeholder="Type a message or share study note...">
+        <button class="btn-primary" id="chat-send-btn">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 2: Create Study Group -->
+  <div class="modal-overlay" id="create-group-modal">
+    <div class="modal-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="font-size: 1.15rem; font-weight: 700;">Create Collaborative Study Group</h3>
+        <button class="btn-icon modal-close-btn">✕</button>
+      </div>
+      <form id="create-group-form" style="display: flex; flex-direction: column; gap: 12px;">
+        <div>
+          <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">Group Name:</label>
+          <input type="text" class="input-field" id="new-group-name" placeholder="e.g. AI Paper Reading Group" required>
+        </div>
+        <div>
+          <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">Topic / Field:</label>
+          <input type="text" class="input-field" id="new-group-topic" placeholder="e.g. Machine Learning & Math" required>
+        </div>
+        <div>
+          <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">Description & Goals:</label>
+          <textarea class="textarea-field" id="new-group-desc" rows="3" placeholder="Briefly describe what your group studies..."></textarea>
+        </div>
+        <button type="submit" class="btn-primary" style="margin-top: 6px;">Launch Study Group</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 3: Follow New Creator -->
+  <div class="modal-overlay" id="add-creator-modal">
+    <div class="modal-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="font-size: 1.15rem; font-weight: 700;">Follow Educational Creator</h3>
+        <button class="btn-icon modal-close-btn">✕</button>
+      </div>
+      <form id="add-creator-form" style="display: flex; flex-direction: column; gap: 12px;">
+        <div>
+          <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">Platform:</label>
+          <select class="select-field" id="new-creator-platform">
+            <option value="YouTube">YouTube</option>
+            <option value="Instagram">Instagram</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">Creator Name:</label>
+          <input type="text" class="input-field" id="new-creator-name" placeholder="e.g. MIT OpenCourseWare" required>
+        </div>
+        <div>
+          <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">Channel / Instagram Handle:</label>
+          <input type="text" class="input-field" id="new-creator-handle" placeholder="e.g. @mitocw" required>
+        </div>
+        <div>
+          <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">Subject / Category:</label>
+          <input type="text" class="input-field" id="new-creator-category" placeholder="e.g. Physics & Engineering">
+        </div>
+        <button type="submit" class="btn-primary" style="margin-top: 6px;">Follow & Receive Alerts</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 4: Create Subject Tile -->
+  <div class="modal-overlay" id="create-subject-modal">
+    <div class="modal-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="font-size: 1.15rem; font-weight: 700;">Create New Subject Tile</h3>
+        <button class="btn-icon modal-close-btn">✕</button>
+      </div>
+      <form id="create-subject-form" style="display: flex; flex-direction: column; gap: 12px;">
+        <div>
+          <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">Subject Name:</label>
+          <input type="text" class="input-field" id="new-subject-name" placeholder="e.g. Physics, Mathematics, Machine Learning" required>
+        </div>
+        <div>
+          <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">Icon / Emoji:</label>
+          <input type="text" class="input-field" id="new-subject-emoji" placeholder="e.g. ⚛️, 📐, 💻, 🩺, 📚" value="⚛️">
+        </div>
+        <div>
+          <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">First Note Title (Optional):</label>
+          <input type="text" class="input-field" id="new-subject-first-note" placeholder="e.g. Quantum Mechanics Intro & Formulas">
+        </div>
+        <button type="submit" class="btn-primary" style="margin-top: 6px;">Create Subject & Open Workspace</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Right-Click Context Menu for Note Editor -->
+  <div id="editor-context-menu" class="editor-context-menu">
+    <div class="context-menu-item" id="ctx-copy-text">
+      <span style="font-size: 1rem;">📋</span>
+      <span>Copy (to Notepad / Website)</span>
+    </div>
+    <div class="context-menu-item" id="ctx-paste-text">
+      <span style="font-size: 1rem;">📥</span>
+      <span>Paste (from Notepad / Website)</span>
+    </div>
+    <div class="context-menu-item" id="ctx-select-all">
+      <span style="font-size: 1rem;">🔘</span>
+      <span>Select All</span>
+    </div>
+    <div class="context-menu-separator"></div>
+    <div class="context-menu-item" id="ctx-add-voice-note">
+      <span style="font-size: 1rem;">🎙️</span>
+      <span>Add Voice Note</span>
+    </div>
+    <div class="context-menu-item" id="ctx-insert-date">
+      <span style="font-size: 1rem;">🕒</span>
+      <span>Insert Timestamp</span>
+    </div>
+    <div class="context-menu-item" id="ctx-insert-todo">
+      <span style="font-size: 1rem;">☑️</span>
+      <span>Insert Checklist Box</span>
+    </div>
+    <div class="context-menu-separator"></div>
+    <div class="context-menu-item" id="ctx-download-pdf">
+      <span style="font-size: 1rem;">📑</span>
+      <span>Download Note as PDF</span>
+    </div>
+  </div>
+
+  <!-- Floating Voice Note Pill positioned at Cursor -->
+  <div id="floating-voice-widget" class="floating-voice-pill">
+    <div class="voice-pill-header">
+      <div style="display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 0.8rem;">
+        <span class="voice-rec-dot" id="floating-rec-dot"></span>
+        <span id="floating-voice-status">🎙️ Record Voice Note</span>
+      </div>
+      <button class="btn-icon" id="floating-voice-close" style="width: 20px; height: 20px; font-size: 0.75rem;" title="Close">✕</button>
+    </div>
+
+    <!-- Record button & visualizer -->
+    <div class="voice-pill-body">
+      <button class="btn-primary" id="floating-record-toggle-btn" style="padding: 5px 10px; font-size: 0.82rem;">
+        <span id="floating-rec-btn-icon">🔴</span>
+        <span id="floating-rec-btn-label">Record</span>
+      </button>
+      <span id="floating-timer-display" style="font-family: var(--font-mono); font-size: 0.85rem; font-weight: 600;">00:00</span>
+      <canvas id="floating-mini-waveform" width="100" height="26" style="border-radius: 4px; background: var(--bg-input); border: 1px solid var(--border);"></canvas>
+    </div>
+
+    <!-- Post-record action buttons -->
+    <div id="floating-post-record-actions" style="display: none; flex-direction: column; gap: 6px; margin-top: 4px;">
+      <audio id="floating-mini-audio" controls style="width: 100%; height: 28px;"></audio>
+      <input type="text" id="floating-title-input" class="input-field" placeholder="Title (optional)..." style="font-size: 0.78rem; padding: 4px 8px; height: 26px;">
+      <div style="display: flex; gap: 6px;">
+        <button class="btn-primary" id="floating-save-insert-btn" style="flex: 1; padding: 4px 8px; font-size: 0.78rem;">✓ Insert at Cursor</button>
+        <button class="btn-secondary" id="floating-retry-btn" style="padding: 4px 8px; font-size: 0.78rem;">Retry</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Continuous Blinking Reminder Alert Pop-up (Right Side of Screen) -->
+  <div id="reminder-alert-popup" class="reminder-alert-popup" style="display: none;" role="alert">
+    <div class="reminder-popup-header">
+      <div class="reminder-popup-badge">
+        <span class="reminder-beacon-dot"></span>
+        <span>🔔 ACTIVE REMINDER ALERT</span>
+      </div>
+      <button type="button" class="reminder-popup-close-x" id="reminder-popup-close-x" title="Turn off this pop-up alert (Reminder remains active)">✕</button>
+    </div>
+
+    <div class="reminder-popup-content">
+      <div class="reminder-popup-title" id="reminder-popup-title">Reminder Title</div>
+      <div class="reminder-popup-meta">
+        <span id="reminder-popup-time">🕒 18:30</span> • 
+        <span id="reminder-popup-date">📅 Today</span>
+      </div>
+      <div id="reminder-popup-priority-badge" style="margin: 4px 0;"></div>
+      <div class="reminder-popup-lifecycle" id="reminder-popup-lifecycle">
+        <span>⏳</span>
+        <span id="reminder-popup-lifecycle-text">Closes automatically when the day ends (at midnight), or you can close it below.</span>
+      </div>
+    </div>
+
+    <div class="reminder-popup-actions">
+      <button type="button" class="btn-secondary" id="reminder-popup-cancel-btn" title="Turn off this pop-up alert (Reminder remains active)">
+        Cancel Alert
+      </button>
+      <button type="button" class="btn-primary" id="reminder-popup-close-btn" style="background: var(--success); border-color: var(--success);" title="Mark reminder complete and close it">
+        ✓ Close Reminder
+      </button>
+    </div>
+  </div>
+
+  <!-- Persistent Floating Bottom Timer (Visible Across All Tabs) -->
+  <div id="global-floating-timer" class="global-floating-timer" style="display: none;">
+    <div class="floating-timer-left" id="floating-timer-jump-btn" title="Click to open Timer tab">
+      <span class="floating-timer-dot" id="floating-timer-dot"></span>
+      <span class="floating-timer-label">⏱️</span>
+      <span class="floating-timer-digits" id="floating-timer-digits">25:00</span>
+    </div>
+    <div class="floating-timer-actions">
+      <button type="button" class="floating-timer-btn" id="floating-timer-toggle-btn" title="Pause / Resume">⏸️</button>
+      <button type="button" class="floating-timer-btn" id="floating-timer-reset-btn" title="Reset Timer">🔄</button>
+      <button type="button" class="floating-timer-btn primary" id="floating-timer-open-view" title="Open Full Timer">↗️</button>
+      <button type="button" class="floating-timer-btn danger" id="floating-timer-stop-alarm-btn" style="display: none;" title="Stop Alarm Sound">🔕 Stop</button>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container"></div>
+
+  <!-- App Controller Module Entry Point -->
+  <script type="module" src="app.js"></script>
+</body>
+</html>
