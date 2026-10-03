@@ -37,9 +37,17 @@ let currentlyPlayingMemoId = null;
 let currentPlaybackSpeed = 1.0;
 let isNotePreviewMode = false;
 let toastFn = null;
+let noteChangeCallback = null;
+let isTileSelectMode = false;
+let selectedSubjectNames = new Set();
+let draggedNoteId = null;
+let isDraggingNote = false;
+let draggedSubjectName = null;
+let isDraggingSubject = false;
 
 export function initNotesModule(onNoteChange, showToastFn) {
   toastFn = showToastFn;
+  noteChangeCallback = onNoteChange;
   loadSubjectsAndNotes();
 
   // Elements in Subjects View
@@ -110,6 +118,8 @@ export function initNotesModule(onNoteChange, showToastFn) {
   backToSubjectsBtn?.addEventListener('click', () => {
     activeSubject = null;
     localStorage.removeItem('omnistudy_active_subject');
+    isTileSelectMode = false;
+    selectedSubjectNames.clear();
     renderSubjectTiles();
     showSubjectsView();
   });
@@ -201,8 +211,14 @@ export function initNotesModule(onNoteChange, showToastFn) {
   // Setup Right-Click Context Menu & Floating Voice Recorder
   setupRightClickVoiceNoteFeature(onNoteChange);
 
+  // Setup Notion-Style Slash ("/") Command Menu
+  setupSlashCommandMenu(onNoteChange);
+
   // Setup In-Editor Mic Logo Click-to-Play & Preview Switcher
   setupNoteAreaVoicePlayback(onNoteChange);
+
+  // Setup Subject Tile Management (Single Delete & Batch Select/Delete)
+  setupTileManagementControls();
 
   // Rehydrate state: check if user left off inside a specific subject
   const savedActiveSubject = localStorage.getItem('omnistudy_active_subject');
@@ -752,6 +768,512 @@ function insertHtmlAtSavedCursor(html, onNoteChange) {
   }
 
   triggerAutoSave(onNoteChange);
+}
+
+/**
+ * Notion-Style Slash ("/") Command Menu
+ */
+let isSlashMenuOpen = false;
+let slashTriggerNode = null;
+let slashTriggerIdx = 0;
+let savedCaretCoords = null;
+let filteredSlashCommands = [];
+let activeSlashIndex = 0;
+
+const SLASH_COMMANDS = [
+  {
+    cmd: 'text',
+    title: 'Text',
+    desc: 'Just start writing with plain text.',
+    icon: 'T',
+    keywords: 'text normal paragraph plain body standard',
+    action: (editor) => {
+      ensureEditorFocus();
+      document.execCommand('formatBlock', false, '<div>');
+    }
+  },
+  {
+    cmd: 'h1',
+    title: 'Heading 1',
+    desc: 'Big section heading.',
+    icon: 'H₁',
+    isHBadge: true,
+    keywords: 'h1 heading 1 big title primary',
+    action: (editor) => {
+      ensureEditorFocus();
+      document.execCommand('formatBlock', false, '<h1>');
+    }
+  },
+  {
+    cmd: 'h2',
+    title: 'Heading 2',
+    desc: 'Medium section heading.',
+    icon: 'H₂',
+    isHBadge: true,
+    keywords: 'h2 heading 2 medium secondary section',
+    action: (editor) => {
+      ensureEditorFocus();
+      document.execCommand('formatBlock', false, '<h2>');
+    }
+  },
+  {
+    cmd: 'h3',
+    title: 'Heading 3',
+    desc: 'Small section heading.',
+    icon: 'H₃',
+    isHBadge: true,
+    keywords: 'h3 heading 3 small subsection',
+    action: (editor) => {
+      ensureEditorFocus();
+      document.execCommand('formatBlock', false, '<h3>');
+    }
+  },
+  {
+    cmd: 'h4',
+    title: 'Heading 4',
+    desc: 'Subheading or minor section.',
+    icon: 'H₄',
+    isHBadge: true,
+    keywords: 'h4 heading 4 sub minor',
+    action: (editor) => {
+      ensureEditorFocus();
+      document.execCommand('formatBlock', false, '<h4>');
+    }
+  },
+  {
+    cmd: 'bullet',
+    title: 'Bulleted list',
+    desc: 'Create a simple bulleted list.',
+    icon: '•=',
+    isListBadge: true,
+    keywords: 'bullet list unordered bulleted points ul',
+    action: (editor) => {
+      ensureEditorFocus();
+      document.execCommand('insertUnorderedList');
+    }
+  },
+  {
+    cmd: 'number',
+    title: 'Numbered list',
+    desc: 'Create a list with numbering.',
+    icon: '1=',
+    isListBadge: true,
+    keywords: 'number numbered list ordered 1 ol sequential',
+    action: (editor) => {
+      ensureEditorFocus();
+      document.execCommand('insertOrderedList');
+    }
+  },
+  {
+    cmd: 'todo',
+    title: 'To-do list',
+    desc: 'Track tasks with a to-do list.',
+    icon: '☑️',
+    keywords: 'todo to-do list checkbox task check checkmark',
+    action: (editor, onNoteChange) => {
+      const todoStr = `<div class="note-todo-item" style="display: flex; align-items: center; gap: 8px; margin: 4px 0;"><input type="checkbox" style="cursor: pointer;"> <span>Task item...</span></div><br>`;
+      insertHtmlAtSavedCursor(todoStr, onNoteChange);
+    }
+  },
+  {
+    cmd: 'voice',
+    title: 'Voice Note',
+    desc: 'Record audio and insert chip at cursor.',
+    icon: '🎙️',
+    keywords: 'voice audio memo mic recording record sound dictate',
+    action: (editor, onNoteChange, caretCoords) => {
+      const x = caretCoords ? caretCoords.left : lastMouseX || 200;
+      const y = caretCoords ? caretCoords.bottom + 8 : lastMouseY || 200;
+      openFloatingVoiceRecorderAt(x, y);
+    }
+  },
+  {
+    cmd: 'callout',
+    title: 'Callout / Quote',
+    desc: 'Make writing stand out with an accent callout.',
+    icon: '💡',
+    keywords: 'callout quote blockquote highlight tip note alert info',
+    action: (editor, onNoteChange) => {
+      const calloutStr = `<blockquote style="border-left: 3px solid var(--accent); padding: 8px 12px; margin: 8px 0; background: rgba(124, 58, 237, 0.08); border-radius: 4px; color: var(--text-primary);">💡 Note or quote...</blockquote><br>`;
+      insertHtmlAtSavedCursor(calloutStr, onNoteChange);
+    }
+  },
+  {
+    cmd: 'divider',
+    title: 'Divider',
+    desc: 'Visually divide blocks with a line.',
+    icon: '―',
+    keywords: 'divider horizontal rule line hr break separator',
+    action: (editor, onNoteChange) => {
+      const divStr = `<hr style="border: none; border-top: 1px solid var(--border); margin: 16px 0;"><br>`;
+      insertHtmlAtSavedCursor(divStr, onNoteChange);
+    }
+  },
+  {
+    cmd: 'timestamp',
+    title: 'Timestamp',
+    desc: 'Insert current date and time badge.',
+    icon: '🕒',
+    keywords: 'timestamp time date clock now current today',
+    action: (editor, onNoteChange) => {
+      const dateStr = `<strong>[${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}]</strong>&nbsp;`;
+      insertHtmlAtSavedCursor(dateStr, onNoteChange);
+    }
+  },
+  {
+    cmd: 'pdf',
+    title: 'PDF',
+    desc: 'Download this note as a printable PDF.',
+    icon: '📄',
+    keywords: 'pdf download export print document file',
+    action: () => {
+      downloadCurrentNoteAsPdf();
+    }
+  }
+];
+
+function detectCurrentBlockCommand() {
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0) return 'text';
+  let node = sel.anchorNode;
+  const editor = document.getElementById('note-edit-content');
+  while (node && node !== editor) {
+    if (node.nodeType === 1) {
+      const tag = node.tagName.toUpperCase();
+      if (tag === 'H1') return 'h1';
+      if (tag === 'H2') return 'h2';
+      if (tag === 'H3') return 'h3';
+      if (tag === 'H4') return 'h4';
+      if (tag === 'UL') return 'bullet';
+      if (tag === 'OL') return 'number';
+      if (node.classList?.contains('note-todo-item')) return 'todo';
+      if (tag === 'BLOCKQUOTE') return 'callout';
+    }
+    node = node.parentNode;
+  }
+  return 'text';
+}
+
+function getCaretCoordinates() {
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0) return null;
+  const range = sel.getRangeAt(0);
+  let rect = range.getBoundingClientRect();
+  if (rect && (rect.top !== 0 || rect.bottom !== 0)) {
+    return { left: rect.left, top: rect.top, bottom: rect.bottom, height: rect.height };
+  }
+  const rects = range.getClientRects();
+  if (rects.length > 0) {
+    return { left: rects[0].left, top: rects[0].top, bottom: rects[0].bottom, height: rects[0].height };
+  }
+  try {
+    const dummy = document.createElement('span');
+    dummy.textContent = '\u200B';
+    const clone = range.cloneRange();
+    clone.insertNode(dummy);
+    rect = dummy.getBoundingClientRect();
+    dummy.remove();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    if (rect && (rect.top !== 0 || rect.bottom !== 0)) {
+      return { left: rect.left, top: rect.top, bottom: rect.bottom, height: rect.height };
+    }
+  } catch (e) {}
+
+  const editor = document.getElementById('note-edit-content');
+  if (editor) {
+    const b = editor.getBoundingClientRect();
+    return { left: b.left + 24, top: b.top + 30, bottom: b.top + 50, height: 20 };
+  }
+  return { left: 100, top: 100, bottom: 130, height: 30 };
+}
+
+function openSlashMenu(query = '', onNoteChange) {
+  const slashMenu = document.getElementById('editor-slash-menu');
+  if (!slashMenu) return;
+
+  savedCaretCoords = getCaretCoordinates();
+  renderSlashMenuItems(query, onNoteChange);
+
+  if (!isSlashMenuOpen) {
+    isSlashMenuOpen = true;
+    activeSlashIndex = 0;
+  }
+
+  highlightActiveSlashItem();
+
+  const menuWidth = 295;
+  const menuHeight = 350;
+  let left = savedCaretCoords ? savedCaretCoords.left : 100;
+  let top = savedCaretCoords ? savedCaretCoords.bottom + 6 : 100;
+
+  if (left + menuWidth > window.innerWidth - 16) {
+    left = window.innerWidth - menuWidth - 16;
+  }
+  if (left < 16) left = 16;
+
+  if (top + menuHeight > window.innerHeight - 16) {
+    top = (savedCaretCoords ? savedCaretCoords.top : 200) - menuHeight - 6;
+  }
+  if (top < 16) top = 16;
+
+  slashMenu.style.left = `${left}px`;
+  slashMenu.style.top = `${top}px`;
+  slashMenu.style.display = 'flex';
+}
+
+function closeSlashMenu() {
+  if (!isSlashMenuOpen) return;
+  isSlashMenuOpen = false;
+  const slashMenu = document.getElementById('editor-slash-menu');
+  if (slashMenu) slashMenu.style.display = 'none';
+  slashTriggerNode = null;
+  slashTriggerIdx = 0;
+}
+
+function renderSlashMenuItems(query = '', onNoteChange) {
+  const itemsContainer = document.getElementById('slash-menu-items');
+  const preview = document.getElementById('slash-search-preview');
+  if (!itemsContainer) return;
+
+  const q = query.trim().toLowerCase();
+  if (preview) {
+    preview.textContent = q ? `/${q}` : 'Type to search';
+  }
+
+  const currentCmd = detectCurrentBlockCommand();
+
+  if (!q) {
+    filteredSlashCommands = [...SLASH_COMMANDS];
+  } else {
+    filteredSlashCommands = SLASH_COMMANDS.filter(item => {
+      return (
+        item.cmd.toLowerCase().includes(q) ||
+        item.title.toLowerCase().includes(q) ||
+        item.keywords.toLowerCase().includes(q)
+      );
+    });
+  }
+
+  if (activeSlashIndex >= filteredSlashCommands.length) {
+    activeSlashIndex = 0;
+  }
+
+  if (filteredSlashCommands.length === 0) {
+    itemsContainer.innerHTML = `<div class="slash-no-results">No matching commands for "/${escapeHtml(query)}"</div>`;
+    return;
+  }
+
+  itemsContainer.innerHTML = filteredSlashCommands.map((item, idx) => {
+    const isActive = idx === activeSlashIndex;
+    const isCurrentBlock = item.cmd === currentCmd;
+    const iconClass = item.isHBadge ? 'h-badge' : (item.isListBadge ? 'list-badge' : '');
+    return `
+      <div class="slash-item ${isActive ? 'active' : ''}" data-idx="${idx}" data-cmd="${item.cmd}">
+        <span class="slash-item-icon ${iconClass}">${item.icon}</span>
+        <div class="slash-item-content">
+          <div class="slash-item-title">${escapeHtml(item.title)}</div>
+          <div class="slash-item-desc">${escapeHtml(item.desc)}</div>
+        </div>
+        ${isCurrentBlock ? '<span class="slash-item-check">✓</span>' : ''}
+      </div>
+    `;
+  }).join('');
+
+  itemsContainer.querySelectorAll('.slash-item').forEach(el => {
+    el.addEventListener('mouseenter', () => {
+      const idx = parseInt(el.dataset.idx, 10);
+      if (!isNaN(idx)) {
+        activeSlashIndex = idx;
+        highlightActiveSlashItem();
+      }
+    });
+
+    el.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      const idx = parseInt(el.dataset.idx, 10);
+      if (!isNaN(idx) && filteredSlashCommands[idx]) {
+        selectSlashCommand(filteredSlashCommands[idx], onNoteChange);
+      }
+    });
+  });
+}
+
+function highlightActiveSlashItem() {
+  const itemsContainer = document.getElementById('slash-menu-items');
+  if (!itemsContainer) return;
+  const items = itemsContainer.querySelectorAll('.slash-item');
+  items.forEach((item, idx) => {
+    if (idx === activeSlashIndex) {
+      item.classList.add('active');
+      item.scrollIntoView({ block: 'nearest' });
+    } else {
+      item.classList.remove('active');
+    }
+  });
+}
+
+function selectSlashCommand(cmdItem, onNoteChange) {
+  if (!cmdItem) return;
+
+  const editorElem = document.getElementById('note-edit-content');
+
+  // Delete the typed / and search query text
+  try {
+    if (slashTriggerNode && slashTriggerNode.parentNode) {
+      const text = slashTriggerNode.textContent || '';
+      const startPos = Math.max(0, Math.min(slashTriggerIdx, text.length));
+      const sel = window.getSelection();
+      let endPos = text.length;
+      if (sel && sel.focusNode === slashTriggerNode) {
+        endPos = Math.max(startPos, Math.min(sel.focusOffset, text.length));
+      }
+
+      const r = document.createRange();
+      r.setStart(slashTriggerNode, startPos);
+      r.setEnd(slashTriggerNode, endPos);
+      r.deleteContents();
+      sel.removeAllRanges();
+      sel.addRange(r);
+      saveCurrentSelectionRange();
+    }
+  } catch (err) {
+    console.warn('Error clearing slash query:', err);
+  }
+
+  const caretCoords = savedCaretCoords;
+  closeSlashMenu();
+
+  // Execute the command action
+  cmdItem.action(editorElem, onNoteChange, caretCoords);
+
+  updateToolbarButtonStates();
+  triggerAutoSave(onNoteChange);
+}
+
+function setupSlashCommandMenu(onNoteChange) {
+  const editorElem = document.getElementById('note-edit-content');
+  const slashMenu = document.getElementById('editor-slash-menu');
+  if (!editorElem || !slashMenu) return;
+
+  function checkSlashTrigger() {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) {
+      closeSlashMenu();
+      return;
+    }
+    const range = sel.getRangeAt(0);
+    if (!range.collapsed) {
+      closeSlashMenu();
+      return;
+    }
+
+    let node = sel.focusNode;
+    const offset = sel.focusOffset;
+
+    if (!node) {
+      closeSlashMenu();
+      return;
+    }
+
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      if (node.childNodes && node.childNodes[offset - 1]) {
+        node = node.childNodes[offset - 1];
+      }
+    }
+
+    if (!node || node.nodeType !== Node.TEXT_NODE) {
+      closeSlashMenu();
+      return;
+    }
+
+    const text = node.textContent || '';
+    const textBefore = text.substring(0, offset);
+    const slashIdx = textBefore.lastIndexOf('/');
+
+    if (slashIdx === -1) {
+      closeSlashMenu();
+      return;
+    }
+
+    const charBefore = slashIdx > 0 ? textBefore[slashIdx - 1] : ' ';
+    if (charBefore !== ' ' && charBefore !== '\n' && charBefore !== '\u00A0' && slashIdx !== 0) {
+      closeSlashMenu();
+      return;
+    }
+
+    const query = textBefore.substring(slashIdx + 1);
+    if (query.includes(' ') || query.includes('\n')) {
+      closeSlashMenu();
+      return;
+    }
+
+    slashTriggerNode = node;
+    slashTriggerIdx = slashIdx;
+    openSlashMenu(query, onNoteChange);
+  }
+
+  editorElem.addEventListener('keydown', (e) => {
+    if (isSlashMenuOpen) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (filteredSlashCommands.length > 0) {
+          activeSlashIndex = (activeSlashIndex + 1) % filteredSlashCommands.length;
+          highlightActiveSlashItem();
+        }
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (filteredSlashCommands.length > 0) {
+          activeSlashIndex = (activeSlashIndex - 1 + filteredSlashCommands.length) % filteredSlashCommands.length;
+          highlightActiveSlashItem();
+        }
+        return;
+      }
+      if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault();
+        if (filteredSlashCommands.length > 0 && activeSlashIndex < filteredSlashCommands.length) {
+          selectSlashCommand(filteredSlashCommands[activeSlashIndex], onNoteChange);
+        } else {
+          closeSlashMenu();
+        }
+        return;
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        closeSlashMenu();
+        return;
+      }
+    }
+  });
+
+  editorElem.addEventListener('input', () => {
+    checkSlashTrigger();
+  });
+
+  editorElem.addEventListener('keyup', (e) => {
+    if (['ArrowUp', 'ArrowDown', 'Enter', 'Escape', 'Tab'].includes(e.key)) {
+      return;
+    }
+    checkSlashTrigger();
+  });
+
+  editorElem.addEventListener('click', () => {
+    closeSlashMenu();
+  });
+
+  // Close when clicking footer or outside
+  slashMenu.querySelector('.slash-menu-footer')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    closeSlashMenu();
+  });
+
+  window.addEventListener('mousedown', (e) => {
+    if (isSlashMenuOpen && slashMenu && !slashMenu.contains(e.target)) {
+      closeSlashMenu();
+    }
+  });
 }
 
 const PAGE_DIMENSIONS = {
@@ -1728,8 +2250,13 @@ export function renderSubjectTiles() {
   const filtered = subjects.filter(s => s.name.toLowerCase().includes(query) || (s.description && s.description.toLowerCase().includes(query)));
 
   if (countBadge) {
-    countBadge.textContent = `${subjects.length} Subjects`;
+    countBadge.textContent = query 
+      ? `${filtered.length} of ${subjects.length} Subjects` 
+      : `${subjects.length} Subjects`;
   }
+
+  // Update batch bar state
+  updateBatchBarUI();
 
   let html = '';
 
@@ -1737,28 +2264,44 @@ export function renderSubjectTiles() {
     const subjectNotes = notes.filter(n => n.category.toLowerCase() === subj.name.toLowerCase());
     const noteCount = subjectNotes.length;
     const previews = subjectNotes.slice(0, 2).map(n => escapeHtml(n.title)).join(' • ');
+    const isSelected = selectedSubjectNames.has(subj.name);
 
     html += `
-      <div class="subject-square-tile" data-subject="${escapeHtml(subj.name)}">
+      <div class="subject-square-tile ${isTileSelectMode ? 'select-mode' : ''} ${isSelected ? 'selected' : ''}" 
+           data-subject="${escapeHtml(subj.name)}"
+           draggable="${!isTileSelectMode ? 'true' : 'false'}">
         <div>
+          ${isTileSelectMode ? `
+            <div class="tile-select-checkbox-wrap">
+              <input type="checkbox" class="tile-select-checkbox" data-subject="${escapeHtml(subj.name)}" ${isSelected ? 'checked' : ''} />
+              <span style="font-size: 0.8rem; margin-left: 6px; font-weight: 500; color: ${isSelected ? 'var(--primary)' : 'var(--text-muted)'};">${isSelected ? 'Selected' : 'Select'}</span>
+            </div>
+          ` : ''}
           <div class="subject-tile-header">
             <div class="subject-tile-icon">${subj.icon || '📚'}</div>
-            <span class="subject-tile-count">${noteCount} ${noteCount === 1 ? 'note' : 'notes'}</span>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span class="subject-tile-count">${noteCount} ${noteCount === 1 ? 'note' : 'notes'}</span>
+              ${!isTileSelectMode ? `
+                <button type="button" class="tile-delete-btn" data-subject="${escapeHtml(subj.name)}" title="Delete ${escapeHtml(subj.name)} tile">
+                  🗑️
+                </button>
+              ` : ''}
+            </div>
           </div>
           <div class="subject-tile-title">${escapeHtml(subj.name)}</div>
           <div class="subject-tile-preview">${previews || escapeHtml(subj.description || 'No notes added yet.')}</div>
         </div>
 
         <div class="subject-tile-footer">
-          <span>Open Notes ➔</span>
+          <span>${isTileSelectMode ? (isSelected ? '✓ Selected' : 'Click to select') : 'Open Notes ➔'}</span>
           <span style="font-family: var(--font-mono); opacity: 0.8;">${noteCount > 0 ? 'Active' : 'Empty'}</span>
         </div>
       </div>
     `;
   });
 
-  // Dynamic creation tile as user types
-  if (query.length > 0 && !subjects.some(s => s.name.toLowerCase() === query)) {
+  // Dynamic creation tile as user types (only in normal view)
+  if (!isTileSelectMode && query.length > 0 && !subjects.some(s => s.name.toLowerCase() === query)) {
     const suggestedEmoji = getSubjectEmoji(query);
     const capitalized = query.charAt(0).toUpperCase() + query.slice(1);
 
@@ -1780,22 +2323,115 @@ export function renderSubjectTiles() {
     `;
   }
 
-  // "+ Add Subject" tile
-  html += `
-    <div class="add-subject-tile" id="grid-add-subject-tile">
-      <div class="add-subject-icon">+</div>
-      <div style="font-weight: 600; font-size: 0.95rem;">New Subject Tile</div>
-      <div style="font-size: 0.75rem; color: var(--text-muted);">Organize your study tracks</div>
-    </div>
-  `;
+  // "+ Add Subject" tile (only in normal view)
+  if (!isTileSelectMode) {
+    html += `
+      <div class="add-subject-tile" id="grid-add-subject-tile">
+        <div class="add-subject-icon">+</div>
+        <div style="font-weight: 600; font-size: 0.95rem;">New Subject Tile</div>
+        <div style="font-size: 0.75rem; color: var(--text-muted);">Organize your study tracks</div>
+      </div>
+    `;
+  }
 
   container.innerHTML = html;
 
+  // Bind clicks and drag-drop on each subject tile
   container.querySelectorAll('.subject-square-tile[data-subject]').forEach(tile => {
+    const subjectName = tile.dataset.subject;
+
+    // Direct delete button click handler
+    const deleteBtn = tile.querySelector('.tile-delete-btn');
+    if (deleteBtn) {
+      deleteBtn.setAttribute('draggable', 'false');
+      deleteBtn.addEventListener('dragstart', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      });
+      deleteBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        deleteSubjectWithConfirm(subjectName);
+      });
+    }
+
+    // Checkbox click handler
+    const checkbox = tile.querySelector('.tile-select-checkbox');
+    if (checkbox) {
+      checkbox.setAttribute('draggable', 'false');
+      checkbox.addEventListener('dragstart', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      });
+      checkbox.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleSubjectSelection(subjectName);
+      });
+    }
+
+    // Tile click handler
     tile.addEventListener('click', () => {
-      const subjectName = tile.dataset.subject;
-      openSubjectWorkspace(subjectName);
+      if (isDraggingSubject) return;
+      if (isTileSelectMode) {
+        toggleSubjectSelection(subjectName);
+      } else {
+        openSubjectWorkspace(subjectName);
+      }
     });
+
+    // Drag-and-drop repositioning handlers (when not in select mode)
+    if (!isTileSelectMode) {
+      tile.addEventListener('dragstart', (e) => {
+        draggedSubjectName = subjectName;
+        isDraggingSubject = true;
+        tile.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', subjectName);
+      });
+
+      tile.addEventListener('dragend', () => {
+        draggedSubjectName = null;
+        tile.classList.remove('dragging');
+        container.querySelectorAll('.subject-square-tile').forEach(t => {
+          t.classList.remove('drop-indicator-before', 'drop-indicator-after');
+        });
+        setTimeout(() => { isDraggingSubject = false; }, 60);
+      });
+
+      tile.addEventListener('dragover', (e) => {
+        if (!draggedSubjectName || draggedSubjectName.toLowerCase() === subjectName.toLowerCase()) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+
+        const rect = tile.getBoundingClientRect();
+        const relX = e.clientX - rect.left;
+        const isBefore = relX < rect.width / 2;
+
+        tile.classList.toggle('drop-indicator-before', isBefore);
+        tile.classList.toggle('drop-indicator-after', !isBefore);
+      });
+
+      tile.addEventListener('dragleave', (e) => {
+        if (!tile.contains(e.relatedTarget)) {
+          tile.classList.remove('drop-indicator-before', 'drop-indicator-after');
+        }
+      });
+
+      tile.addEventListener('drop', (e) => {
+        e.preventDefault();
+        tile.classList.remove('drop-indicator-before', 'drop-indicator-after');
+
+        const sourceName = draggedSubjectName || e.dataTransfer.getData('text/plain');
+        const targetName = subjectName;
+
+        if (!sourceName || sourceName.toLowerCase() === targetName.toLowerCase()) return;
+
+        const rect = tile.getBoundingClientRect();
+        const relX = e.clientX - rect.left;
+        const placeBefore = relX < rect.width / 2;
+
+        reorderSubjects(sourceName, targetName, placeBefore);
+      });
+    }
   });
 
   const dynamicTile = document.getElementById('dynamic-create-subject-tile');
@@ -1809,6 +2445,192 @@ export function renderSubjectTiles() {
   document.getElementById('grid-add-subject-tile')?.addEventListener('click', () => {
     document.getElementById('create-subject-modal')?.classList.add('open');
     document.getElementById('new-subject-name')?.focus();
+  });
+}
+
+function updateBatchBarUI() {
+  const batchBar = document.getElementById('subject-batch-bar');
+  const manageBtn = document.getElementById('manage-subjects-btn');
+  const countBadge = document.getElementById('selected-tiles-count-badge');
+  const deleteSelectedBtn = document.getElementById('delete-selected-tiles-btn');
+
+  if (batchBar) {
+    batchBar.style.display = isTileSelectMode ? 'flex' : 'none';
+  }
+  if (manageBtn) {
+    if (isTileSelectMode) {
+      manageBtn.classList.add('active');
+      manageBtn.textContent = '✕ Exit Selection';
+    } else {
+      manageBtn.classList.remove('active');
+      manageBtn.textContent = '☑️ Select Tiles';
+    }
+  }
+  if (countBadge) {
+    countBadge.textContent = `${selectedSubjectNames.size} selected`;
+  }
+  if (deleteSelectedBtn) {
+    deleteSelectedBtn.disabled = selectedSubjectNames.size === 0;
+  }
+}
+
+function toggleSubjectSelection(subjectName) {
+  if (selectedSubjectNames.has(subjectName)) {
+    selectedSubjectNames.delete(subjectName);
+  } else {
+    selectedSubjectNames.add(subjectName);
+  }
+  renderSubjectTiles();
+}
+
+function deleteSubjectWithConfirm(subjectName) {
+  const norm = subjectName.toLowerCase();
+  const associatedNotes = notes.filter(n => n.category.toLowerCase() === norm);
+  const noteCountMsg = associatedNotes.length > 0 
+    ? ` and its ${associatedNotes.length} associated note${associatedNotes.length === 1 ? '' : 's'}`
+    : '';
+
+  if (!confirm(`Are you sure you want to delete the "${subjectName}" tile${noteCountMsg}? This action cannot be undone.`)) {
+    return;
+  }
+
+  deleteSubject(subjectName);
+  if (toastFn) {
+    toastFn(`Deleted subject "${subjectName}"`, 'info');
+  }
+}
+
+function deleteSubject(subjectName) {
+  const norm = subjectName.toLowerCase();
+  subjects = subjects.filter(s => s.name.toLowerCase() !== norm);
+  localStorage.setItem('omnistudy_subjects', JSON.stringify(subjects));
+
+  const removedNotes = notes.filter(n => n.category.toLowerCase() === norm);
+  notes = notes.filter(n => n.category.toLowerCase() !== norm);
+
+  removedNotes.forEach(n => {
+    fetch(`/api/notes/${n.id}`, { method: 'DELETE' }).catch(() => {});
+  });
+
+  if (activeSubject && activeSubject.toLowerCase() === norm) {
+    activeSubject = null;
+    localStorage.removeItem('omnistudy_active_subject');
+  }
+  if (removedNotes.some(n => n.id === activeNoteId)) {
+    activeNoteId = null;
+  }
+
+  selectedSubjectNames.delete(subjectName);
+  saveNotes();
+  if (noteChangeCallback) noteChangeCallback();
+  renderSubjectTiles();
+}
+
+function deleteSelectedSubjects() {
+  const count = selectedSubjectNames.size;
+  if (count === 0) return;
+
+  const names = Array.from(selectedSubjectNames);
+  const namesSummary = names.length <= 4 
+    ? names.join(', ') 
+    : `${names.slice(0, 3).join(', ')} and ${names.length - 3} others`;
+
+  const totalNotes = notes.filter(n => names.some(name => name.toLowerCase() === n.category.toLowerCase())).length;
+  const noteCountMsg = totalNotes > 0 ? ` (and ${totalNotes} note${totalNotes === 1 ? '' : 's'})` : '';
+
+  if (!confirm(`Are you sure you want to delete ${count} subject tile${count === 1 ? '' : 's'}: ${namesSummary}${noteCountMsg}? This action cannot be undone.`)) {
+    return;
+  }
+
+  const normNames = new Set(names.map(n => n.toLowerCase()));
+
+  // Remove subjects
+  subjects = subjects.filter(s => !normNames.has(s.name.toLowerCase()));
+  localStorage.setItem('omnistudy_subjects', JSON.stringify(subjects));
+
+  // Remove notes
+  const removedNotes = notes.filter(n => normNames.has(n.category.toLowerCase()));
+  notes = notes.filter(n => !normNames.has(n.category.toLowerCase()));
+
+  removedNotes.forEach(n => {
+    fetch(`/api/notes/${n.id}`, { method: 'DELETE' }).catch(() => {});
+  });
+
+  if (activeSubject && normNames.has(activeSubject.toLowerCase())) {
+    activeSubject = null;
+    localStorage.removeItem('omnistudy_active_subject');
+  }
+  if (removedNotes.some(n => n.id === activeNoteId)) {
+    activeNoteId = null;
+  }
+
+  selectedSubjectNames.clear();
+  isTileSelectMode = false;
+
+  saveNotes();
+  if (noteChangeCallback) noteChangeCallback();
+  renderSubjectTiles();
+
+  if (toastFn) {
+    toastFn(`Successfully deleted ${count} subject tile${count === 1 ? '' : 's'}`, 'success');
+  }
+}
+
+function reorderSubjects(sourceName, targetName, placeBefore) {
+  const fromIndex = subjects.findIndex(s => s.name.toLowerCase() === sourceName.toLowerCase());
+  if (fromIndex === -1) return;
+
+  const [movedSubject] = subjects.splice(fromIndex, 1);
+  const toIndex = subjects.findIndex(s => s.name.toLowerCase() === targetName.toLowerCase());
+  if (toIndex === -1) {
+    subjects.push(movedSubject);
+  } else {
+    const insertIndex = placeBefore ? toIndex : toIndex + 1;
+    subjects.splice(insertIndex, 0, movedSubject);
+  }
+
+  localStorage.setItem('omnistudy_subjects', JSON.stringify(subjects));
+  renderSubjectTiles();
+  if (toastFn) {
+    toastFn('Subject tile order updated', 'info');
+  }
+}
+
+function setupTileManagementControls() {
+  const manageBtn = document.getElementById('manage-subjects-btn');
+  const selectAllBtn = document.getElementById('select-all-tiles-btn');
+  const deselectAllBtn = document.getElementById('deselect-all-tiles-btn');
+  const deleteSelectedBtn = document.getElementById('delete-selected-tiles-btn');
+  const cancelBtn = document.getElementById('cancel-select-tiles-btn');
+
+  manageBtn?.addEventListener('click', () => {
+    isTileSelectMode = !isTileSelectMode;
+    if (!isTileSelectMode) {
+      selectedSubjectNames.clear();
+    }
+    renderSubjectTiles();
+  });
+
+  selectAllBtn?.addEventListener('click', () => {
+    const query = (document.getElementById('subject-search-input')?.value || '').trim().toLowerCase();
+    const filtered = subjects.filter(s => s.name.toLowerCase().includes(query) || (s.description && s.description.toLowerCase().includes(query)));
+    filtered.forEach(s => selectedSubjectNames.add(s.name));
+    renderSubjectTiles();
+  });
+
+  deselectAllBtn?.addEventListener('click', () => {
+    selectedSubjectNames.clear();
+    renderSubjectTiles();
+  });
+
+  deleteSelectedBtn?.addEventListener('click', () => {
+    deleteSelectedSubjects();
+  });
+
+  cancelBtn?.addEventListener('click', () => {
+    isTileSelectMode = false;
+    selectedSubjectNames.clear();
+    renderSubjectTiles();
   });
 }
 
@@ -2011,8 +2833,11 @@ function renderNotesList() {
   }
 
   container.innerHTML = filtered.map(n => `
-    <div class="note-item-card ${n.id === activeNoteId ? 'active' : ''}" data-id="${n.id}">
-      <div class="note-item-title">${escapeHtml(n.title)}</div>
+    <div class="note-item-card ${n.id === activeNoteId ? 'active' : ''}" data-id="${n.id}" draggable="true">
+      <div class="note-item-header">
+        <div class="note-item-title">${escapeHtml(n.title)}</div>
+        <span class="note-drag-handle" title="Drag to reposition">⠿</span>
+      </div>
       <div class="note-item-snippet">${escapeHtml(stripHtmlTags(n.content).substring(0, 80))}</div>
       <div class="note-item-meta">
         <span class="note-tag-badge">${n.category}</span>
@@ -2022,18 +2847,95 @@ function renderNotesList() {
   `).join('');
 
   container.querySelectorAll('.note-item-card').forEach(card => {
+    const id = card.dataset.id;
+
+    // Normal click opens/selects note (unless currently dragging)
     card.addEventListener('click', () => {
-      const id = card.dataset.id;
+      if (isDraggingNote) return;
       activeNoteId = id;
       renderNotesList();
       const note = notes.find(n => n.id === id);
       if (note) loadNoteIntoEditor(note);
     });
+
+    // Drag-and-drop repositioning
+    card.addEventListener('dragstart', (e) => {
+      draggedNoteId = id;
+      isDraggingNote = true;
+      card.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', id);
+    });
+
+    card.addEventListener('dragend', () => {
+      draggedNoteId = null;
+      card.classList.remove('dragging');
+      container.querySelectorAll('.note-item-card').forEach(c => {
+        c.classList.remove('drop-indicator-top', 'drop-indicator-bottom');
+      });
+      setTimeout(() => { isDraggingNote = false; }, 60);
+    });
+
+    card.addEventListener('dragover', (e) => {
+      if (!draggedNoteId || draggedNoteId === id) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+
+      const rect = card.getBoundingClientRect();
+      const relY = e.clientY - rect.top;
+      const isTop = relY < rect.height / 2;
+
+      card.classList.toggle('drop-indicator-top', isTop);
+      card.classList.toggle('drop-indicator-bottom', !isTop);
+    });
+
+    card.addEventListener('dragleave', (e) => {
+      if (!card.contains(e.relatedTarget)) {
+        card.classList.remove('drop-indicator-top', 'drop-indicator-bottom');
+      }
+    });
+
+    card.addEventListener('drop', (e) => {
+      e.preventDefault();
+      card.classList.remove('drop-indicator-top', 'drop-indicator-bottom');
+
+      const sourceId = draggedNoteId || e.dataTransfer.getData('text/plain');
+      const targetId = id;
+
+      if (!sourceId || sourceId === targetId) return;
+
+      const rect = card.getBoundingClientRect();
+      const relY = e.clientY - rect.top;
+      const placeAbove = relY < rect.height / 2;
+
+      reorderNotes(sourceId, targetId, placeAbove);
+    });
   });
+}
+
+function reorderNotes(sourceId, targetId, placeAbove) {
+  const fromIndex = notes.findIndex(n => n.id === sourceId);
+  if (fromIndex === -1) return;
+
+  const [movedNote] = notes.splice(fromIndex, 1);
+  const toIndex = notes.findIndex(n => n.id === targetId);
+  if (toIndex === -1) {
+    notes.push(movedNote);
+  } else {
+    const insertIndex = placeAbove ? toIndex : toIndex + 1;
+    notes.splice(insertIndex, 0, movedNote);
+  }
+
+  saveNotes();
+  renderNotesList();
+  if (toastFn) {
+    toastFn('Note order updated', 'info');
+  }
 }
 
 function loadNoteIntoEditor(note) {
   activeNoteId = note.id;
+  closeSlashMenu();
 
   // Stop any previous playing audio when switching notes
   if (activeMemoAudio) {
@@ -2062,6 +2964,7 @@ function loadNoteIntoEditor(note) {
 }
 
 function clearEditor() {
+  closeSlashMenu();
   if (activeMemoAudio) {
     activeMemoAudio.pause();
     activeMemoAudio = null;

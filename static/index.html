@@ -180,7 +180,10 @@
                 <h1 class="page-title">Notes & Study Documentation</h1>
                 <p class="page-desc">Select a subject tile to open its notes, or create a new subject as you type.</p>
               </div>
-              <button class="btn-primary" id="open-new-subject-btn">+ Add Subject Tile</button>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <button class="btn-secondary" id="manage-subjects-btn" title="Select and delete subject tiles">☑️ Select Tiles</button>
+                <button class="btn-primary" id="open-new-subject-btn">+ Add Subject Tile</button>
+              </div>
             </div>
 
             <!-- Subject search & quick creation bar -->
@@ -189,6 +192,19 @@
                 <input type="text" class="input-field" id="subject-search-input" placeholder="Type to search or create a subject (e.g. Physics, Maths, Biology)..." autocomplete="off">
               </div>
               <span class="status-pill" id="subject-count-badge">6 Subjects</span>
+            </div>
+
+            <!-- Batch Actions Bar (Visible during Select Mode) -->
+            <div class="subject-batch-bar" id="subject-batch-bar" style="display: none;">
+              <div class="subject-batch-left">
+                <span class="status-pill batch-count-pill" id="selected-tiles-count-badge">0 selected</span>
+                <button type="button" class="btn-sm btn-secondary" id="select-all-tiles-btn">Select All</button>
+                <button type="button" class="btn-sm btn-secondary" id="deselect-all-tiles-btn">Deselect All</button>
+              </div>
+              <div class="subject-batch-right">
+                <button type="button" class="btn-danger btn-sm" id="delete-selected-tiles-btn" disabled>🗑️ Delete Selected</button>
+                <button type="button" class="btn-secondary btn-sm" id="cancel-select-tiles-btn">Done</button>
+              </div>
             </div>
 
             <!-- Square Tiles Grid -->
@@ -956,6 +972,115 @@
         </div>
         <button type="submit" class="btn-primary" style="margin-top: 6px;">Create Subject & Open Workspace</button>
       </form>
+    </div>
+  </div>
+
+  <!-- Notion-Style Slash ("/") Command Menu for Note Editor -->
+  <div id="editor-slash-menu" class="editor-slash-menu" style="display: none;">
+    <div class="slash-menu-header">
+      <div class="slash-header-badge">
+        <span class="slash-prompt-symbol">/</span>
+        <span class="slash-search-preview" id="slash-search-preview">Type to search</span>
+      </div>
+    </div>
+    <div class="slash-menu-section-title">Turn into</div>
+    <div class="slash-menu-items" id="slash-menu-items">
+      <div class="slash-item active" data-cmd="text" data-keywords="text normal paragraph plain">
+        <span class="slash-item-icon">T</span>
+        <div class="slash-item-content">
+          <div class="slash-item-title">Text</div>
+          <div class="slash-item-desc">Just start writing with plain text.</div>
+        </div>
+        <span class="slash-item-check">✓</span>
+      </div>
+      <div class="slash-item" data-cmd="h1" data-keywords="h1 heading 1 big title">
+        <span class="slash-item-icon h-badge">H₁</span>
+        <div class="slash-item-content">
+          <div class="slash-item-title">Heading 1</div>
+          <div class="slash-item-desc">Big section heading.</div>
+        </div>
+      </div>
+      <div class="slash-item" data-cmd="h2" data-keywords="h2 heading 2 medium">
+        <span class="slash-item-icon h-badge">H₂</span>
+        <div class="slash-item-content">
+          <div class="slash-item-title">Heading 2</div>
+          <div class="slash-item-desc">Medium section heading.</div>
+        </div>
+      </div>
+      <div class="slash-item" data-cmd="h3" data-keywords="h3 heading 3 small">
+        <span class="slash-item-icon h-badge">H₃</span>
+        <div class="slash-item-content">
+          <div class="slash-item-title">Heading 3</div>
+          <div class="slash-item-desc">Small section heading.</div>
+        </div>
+      </div>
+      <div class="slash-item" data-cmd="h4" data-keywords="h4 heading 4 sub subhead">
+        <span class="slash-item-icon h-badge">H₄</span>
+        <div class="slash-item-content">
+          <div class="slash-item-title">Heading 4</div>
+          <div class="slash-item-desc">Subheading or minor section.</div>
+        </div>
+      </div>
+      <div class="slash-item" data-cmd="bullet" data-keywords="bullet list unordered bulleted">
+        <span class="slash-item-icon list-badge">•=</span>
+        <div class="slash-item-content">
+          <div class="slash-item-title">Bulleted list</div>
+          <div class="slash-item-desc">Create a simple bulleted list.</div>
+        </div>
+      </div>
+      <div class="slash-item" data-cmd="number" data-keywords="number numbered list ordered 1">
+        <span class="slash-item-icon list-badge">1=</span>
+        <div class="slash-item-content">
+          <div class="slash-item-title">Numbered list</div>
+          <div class="slash-item-desc">Create a list with numbering.</div>
+        </div>
+      </div>
+      <div class="slash-item" data-cmd="todo" data-keywords="todo to-do list checkbox task check">
+        <span class="slash-item-icon">☑️</span>
+        <div class="slash-item-content">
+          <div class="slash-item-title">To-do list</div>
+          <div class="slash-item-desc">Track tasks with a to-do list.</div>
+        </div>
+      </div>
+      <div class="slash-item" data-cmd="voice" data-keywords="voice audio memo mic recording record">
+        <span class="slash-item-icon">🎙️</span>
+        <div class="slash-item-content">
+          <div class="slash-item-title">Voice Note</div>
+          <div class="slash-item-desc">Record audio and insert chip at cursor.</div>
+        </div>
+      </div>
+      <div class="slash-item" data-cmd="callout" data-keywords="callout quote blockquote highlight tip note">
+        <span class="slash-item-icon">💡</span>
+        <div class="slash-item-content">
+          <div class="slash-item-title">Callout / Quote</div>
+          <div class="slash-item-desc">Make writing stand out with an accent callout.</div>
+        </div>
+      </div>
+      <div class="slash-item" data-cmd="divider" data-keywords="divider horizontal rule line hr break">
+        <span class="slash-item-icon">―</span>
+        <div class="slash-item-content">
+          <div class="slash-item-title">Divider</div>
+          <div class="slash-item-desc">Visually divide blocks with a line.</div>
+        </div>
+      </div>
+      <div class="slash-item" data-cmd="timestamp" data-keywords="timestamp time date clock now">
+        <span class="slash-item-icon">🕒</span>
+        <div class="slash-item-content">
+          <div class="slash-item-title">Timestamp</div>
+          <div class="slash-item-desc">Insert current date and time badge.</div>
+        </div>
+      </div>
+      <div class="slash-item" data-cmd="pdf" data-keywords="pdf download export print document">
+        <span class="slash-item-icon">📄</span>
+        <div class="slash-item-content">
+          <div class="slash-item-title">PDF</div>
+          <div class="slash-item-desc">Download this note as a printable PDF.</div>
+        </div>
+      </div>
+    </div>
+    <div class="slash-menu-footer">
+      <span>Close menu</span>
+      <kbd class="slash-kbd">esc</kbd>
     </div>
   </div>
 
